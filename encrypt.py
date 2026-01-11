@@ -9,19 +9,13 @@ class Encryptor:
         self.key = key
         self.degree = degree
 
-    def xor_mix(self, value_list):
-        """Mix values (0-25) with key using addition mod-26.
-        Applied AFTER Dijkstra encryption.
-        This is perfectly invertible: (a + b) % 26 reverses with (result - b) % 26
-        """
-        key_vals = [ord(c.upper()) - ord('A') for c in self.key if c.isalpha()]
-        if not key_vals:
-            key_vals = [0]
-        key_len = len(key_vals)
-        
+    def xor_mix(self, value_list, weights):
+        """Apply additive mixing using weights (for 0-25 range)"""
         mixed = []
         for i, val in enumerate(value_list):
-            mixed_val = (val + key_vals[i % key_len]) % 26
+            weight_val = weights[i % len(weights)]
+            # Additive mixing with mod 26 (works in A-Z range)
+            mixed_val = (val + weight_val) % 26
             mixed.append(mixed_val)
         return mixed
 
@@ -137,12 +131,15 @@ class Encryptor:
             dijkstra_encrypted.append(encrypted_val)
             print(f"  Node 0→{i}: distance={sp_distance}, ({plain_val} + {sp_distance}) % 26 = {encrypted_val}")
 
-        # Step 4: Apply XOR mixing to Dijkstra-encrypted values
-        xor_mixed = self.xor_mix(dijkstra_encrypted)
-        print(f"\n=== XOR Mixing (final layer) ===")
-        print(f"After XOR: {xor_mixed}")
+        # Step 4: Apply additive mixing using graph edge weights
+        # Extract all edge weights to use as key
+        edge_weights = [w for u, v, w in sorted(edges)]
+        xor_mixed = self.xor_mix(dijkstra_encrypted, edge_weights)
+        print(f"\n=== Additive Mixing (using edge weights) ===")
+        print(f"Edge weights used: {edge_weights[:10]}{'...' if len(edge_weights) > 10 else ''}")
+        print(f"After mixing: {xor_mixed}")
         
-        # Convert to letters
+        # Convert to A-Z letters (already in 0-25 range)
         encrypted_text = "".join([chr(v + ord('A')) for v in xor_mixed])
         
         # Output format: encrypted_text | length | edges
@@ -156,7 +153,7 @@ class Encryptor:
 
 
 if __name__ == "__main__":
-    plaintext = "iiumituuniversity"
+    plaintext = "broiambouttoblowthefuckup"
     key = "secret"
     
     encryptor = Encryptor(key=key, degree=3)
@@ -165,4 +162,4 @@ if __name__ == "__main__":
     print(f"\n{'='*60}")
     print("Send this to decryption:")
     print(encrypted_output)
-    print(f"Also send the key: {key}")
+    print(f"\nNote: No separate key needed - edge weights are the key!")

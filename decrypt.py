@@ -11,18 +11,12 @@ class Decryptor:
         self.key = key
         self.degree = degree
 
-    def xor_unmix(self, mixed_values):
-        """Reverse additive mixing: subtract key values mod-26.
-        Perfectly invertible: (a + b) % 26 reverses with (result - b) % 26
-        """
-        key_vals = [ord(c.upper()) - ord('A') for c in self.key if c.isalpha()]
-        if not key_vals:
-            key_vals = [0]
-        key_len = len(key_vals)
-        
+    def xor_unmix(self, mixed_values, weights):
+        """Reverse additive mixing using weights (for 0-25 range)"""
         result = []
         for i, val in enumerate(mixed_values):
-            unmixed = (val - key_vals[i % key_len]) % 26
+            weight_val = weights[i % len(weights)]
+            unmixed = (val - weight_val) % 26  # Subtractive unmixing
             result.append(unmixed)
         return result
 
@@ -123,24 +117,33 @@ class Decryptor:
         print(f"Encrypted Text: {encrypted_text}")
         print(f"Text Length: {text_length}")
         
-        # Step 1: Reverse XOR mixing first (convert letters to values, unmix)
-        encrypted_values = [ord(c) - ord('A') for c in encrypted_text]
-        dijkstra_encrypted = self.xor_unmix(encrypted_values)
-        print(f"\n=== After reversing XOR ===")
-        print(f"Dijkstra-encrypted values: {dijkstra_encrypted}")
-        
-        # Step 2: Rebuild graph from the edges in the encrypted output (exact same graph!)
+        # Step 1: Parse edges and extract weights
         print("\n=== Graph Edges (u, v, weight) ===")
         G = nx.Graph()
         for i in range(text_length):
             G.add_node(i)
         
+        edge_weights = []
+        edges_list = []
         for edge_str in edges_data.split(";"):
             u, v, w = map(int, edge_str.split(","))
             G.add_edge(u, v, weight=w)
+            edges_list.append((u, v, w))
             print(f"({u}, {v}, {w})")
         
+        # Extract weights in sorted order (same as encryption)
+        edge_weights = [w for u, v, w in sorted(edges_list)]
+        
         print(f"\nRebuilt Graph: {G.number_of_nodes()} nodes, {G.number_of_edges()} edges")
+        print(f"Edge weights: {edge_weights[:10]}{'...' if len(edge_weights) > 10 else ''}")
+        
+        # Step 2: Reverse additive mixing using edge weights (no key needed!)
+        # Decode from A-Z letters to 0-25 values
+        encrypted_values = [ord(c.upper()) - ord('A') for c in encrypted_text]
+        # Apply subtractive unmix (already in 0-25 range)
+        dijkstra_encrypted = self.xor_unmix(encrypted_values, edge_weights)
+        print(f"\n=== After reversing mixing (using edge weights) ===")
+        print(f"Dijkstra-encrypted values: {dijkstra_encrypted}")
         
         # Step 3: Reverse Single-Source Shortest Path from node 0
         plaintext_values = []
@@ -166,7 +169,11 @@ class Decryptor:
         for i in range(text_length):
             sp = distances_from_0[i]
             re_encrypted.append((plaintext_values[i] + sp) % 26)
-        re_mixed = [(re_encrypted[i] + (ord(self.key[i % len(self.key)].upper()) - ord('A'))) % 26 for i in range(text_length)]
+        # Re-apply additive mixing with edge weights
+        re_mixed = []
+        for i in range(text_length):
+            weight_val = edge_weights[i % len(edge_weights)]
+            re_mixed.append((re_encrypted[i] + weight_val) % 26)
         re_encrypted_text = "".join([chr(v + ord('A')) for v in re_mixed])
         if re_encrypted_text != encrypted_text:
             print("\nWARNING: Integrity check failed. Possible causes:")
@@ -184,9 +191,14 @@ class Decryptor:
 
 
 if __name__ == "__main__":
-    # Simulate receiving encrypted data from encrypt.py
+    # Decrypt using ONLY encrypted output - edge weights ARE the key!
+    print("\nDijkstra Cipher Decryption")
+    print("No key needed - weights are embedded in the encrypted output\n")
     encrypted_output = input("Enter encrypted output: ")
-    key = input("Enter key: ")
+    
+    # Key is only used for graph structure generation (already in edges)
+    # The actual encryption key is the edge weights themselves
+    key = "dummy"  # Placeholder - not used for decryption
     
     decryptor = Decryptor(key=key, degree=3)
     plaintext = decryptor.decrypt(encrypted_output)
