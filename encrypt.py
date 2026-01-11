@@ -5,26 +5,19 @@ from graph import visualize_graph
 
 
 class Encryptor:
-    def __init__(self, key="secret", degree=3):
-        self.key = key
+    def __init__(self, degree=3):
         self.degree = degree
 
-    def xor_mix(self, value_list, weights):
-        """Apply additive mixing using weights (for 0-25 range)"""
-        mixed = []
-        for i, val in enumerate(value_list):
-            weight_val = weights[i % len(weights)]
-            # Additive mixing with mod 26 (works in A-Z range)
-            mixed_val = (val + weight_val) % 26
-            mixed.append(mixed_val)
-        return mixed
+    def rot_encrypt(self, value_list, rot_value):
+        """Apply ROT cipher with fixed rotation value (depends on word count)."""
+        return [(val + rot_value) % 26 for val in value_list]
 
     def create_diffusion_graph(self, n):
-        """Create graph from key and node count only.
+        """Create graph from node count only.
         This allows decryption to rebuild the same graph without knowing plaintext.
         """
         G = nx.Graph()
-        rng = random.Random(hash(self.key))
+        rng = random.Random(n)  # Seed only with node count
 
         # Create n nodes (no labels needed)
         for i in range(n):
@@ -100,7 +93,7 @@ class Encryptor:
         plaintext_values = [ord(c.upper()) - ord('A') for c in plaintext if c.isalpha()]
         print(f"Plaintext values (0-25): {plaintext_values}")
 
-        # Step 2: Create graph from key + length (not from plaintext values!)
+        # Step 2: Create graph from length only
         n = len(plaintext_values)
         G = self.create_diffusion_graph(n)
         print(f"\nGraph: {G.number_of_nodes()} nodes, {G.number_of_edges()} edges")
@@ -131,16 +124,15 @@ class Encryptor:
             dijkstra_encrypted.append(encrypted_val)
             print(f"  Node 0→{i}: distance={sp_distance}, ({plain_val} + {sp_distance}) % 26 = {encrypted_val}")
 
-        # Step 4: Apply additive mixing using graph edge weights
-        # Extract all edge weights to use as key
-        edge_weights = [w for u, v, w in sorted(edges)]
-        xor_mixed = self.xor_mix(dijkstra_encrypted, edge_weights)
-        print(f"\n=== Additive Mixing (using edge weights) ===")
-        print(f"Edge weights used: {edge_weights[:10]}{'...' if len(edge_weights) > 10 else ''}")
-        print(f"After mixing: {xor_mixed}")
+        # Step 4: Apply ROT cipher (ROT value = number of words/characters to decrypt)
+        rot_value = len(plaintext)
+        rot_encrypted = self.rot_encrypt(dijkstra_encrypted, rot_value)
+        print(f"\n=== ROT Cipher (final layer) ===")
+        print(f"ROT value (based on word count): {rot_value}")
+        print(f"After ROT{rot_value}: {rot_encrypted}")
         
-        # Convert to A-Z letters (already in 0-25 range)
-        encrypted_text = "".join([chr(v + ord('A')) for v in xor_mixed])
+        # Convert to letters
+        encrypted_text = "".join([chr(v + ord('A')) for v in rot_encrypted])
         
         # Output format: encrypted_text | length | edges
         edges_str = ";".join([f"{u},{v},{w}" for u, v, w in sorted(edges)])
@@ -153,13 +145,12 @@ class Encryptor:
 
 
 if __name__ == "__main__":
-    plaintext = "broiambouttoblowthefuckup"
-    key = "secret"
+    plaintext = "crypto"
     
-    encryptor = Encryptor(key=key, degree=3)
+    encryptor = Encryptor(degree=3)
     encrypted_output = encryptor.encrypt(plaintext)
     
     print(f"\n{'='*60}")
     print("Send this to decryption:")
     print(encrypted_output)
-    print(f"\nNote: No separate key needed - edge weights are the key!")
+    print(f"{'='*60}")

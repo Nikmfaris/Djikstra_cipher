@@ -38,4 +38,3 @@ def visualize_graph(G, title=None):
 	plt.axis("off")
 	plt.tight_layout()
 	plt.show()
-
