@@ -17,7 +17,7 @@ class Encryptor:
         This allows decryption to rebuild the same graph without knowing plaintext.
         """
         G = nx.Graph()
-        rng = random.Random(n)  # Seed only with node count
+        rng = random.Random()  # Use unseeded random for different weights each time
 
         # Create n nodes (no labels needed)
         for i in range(n):
@@ -145,7 +145,7 @@ class Encryptor:
 
 
 if __name__ == "__main__":
-    plaintext = "cryptoiiumlogos"
+    plaintext = "crypto"
     
     encryptor = Encryptor(degree=3)
     encrypted_output = encryptor.encrypt(plaintext)
