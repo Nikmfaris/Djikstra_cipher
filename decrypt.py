@@ -85,31 +85,29 @@ class Decryptor:
         print(f"DECRYPTION")
         print(f"{'='*60}")
 
-        # Parse input: "ENCRYPTED_TEXT|length|edges"
+        # Parse input: "ENCRYPTED_TEXT|edges"
         if "|" not in encrypted_output:
             print("ERROR: Invalid format!")
-            print("Expected format: ENCRYPTED_TEXT|length|edges")
-            print("Example: OMEKE|5|0,2,4;0,3,8;0,4,1;...")
+            print("Expected format: ENCRYPTED_TEXT|edges")
+            print("Example: OMEKE|0,2,4;0,3,8;0,4,1;...")
             print("\nYou need the FULL output from encrypt.py!")
             return None
         
         parts = encrypted_output.split("|")
-        if len(parts) != 3:
+        if len(parts) != 2:
             print("ERROR: Invalid format!")
-            print("Expected format: ENCRYPTED_TEXT|length|edges")
-            print(f"Got {len(parts)} parts instead of 3")
+            print("Expected format: ENCRYPTED_TEXT|edges")
+            print(f"Got {len(parts)} parts instead of 2")
             return None
             
         encrypted_text = parts[0]
-        try:
-            text_length = int(parts[1])
-        except Exception:
-            print("ERROR: Length part is not a valid integer.")
-            return None
-        edges_data = parts[2]
+        edges_data = parts[1]
+        
+        # Infer text length from encrypted text
+        text_length = len(encrypted_text)
         
         print(f"Encrypted Text: {encrypted_text}")
-        print(f"Text Length: {text_length}")
+        print(f"Text Length: {text_length} (inferred from encrypted text)")
         
         # Step 1: Reverse ROT cipher first (convert letters to values, reverse ROT)
         rot_value = text_length

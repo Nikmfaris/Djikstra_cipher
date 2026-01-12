@@ -134,9 +134,9 @@ class Encryptor:
         # Convert to letters
         encrypted_text = "".join([chr(v + ord('A')) for v in rot_encrypted])
         
-        # Output format: encrypted_text | length | edges
+        # Output format: encrypted_text | edges
         edges_str = ";".join([f"{u},{v},{w}" for u, v, w in sorted(edges)])
-        full_output = f"{encrypted_text}|{len(plaintext)}|{edges_str}"
+        full_output = f"{encrypted_text}|{edges_str}"
         
         print(f"\n{'='*60}")
         print(f"Encrypted Text: {encrypted_text}")
@@ -145,7 +145,7 @@ class Encryptor:
 
 
 if __name__ == "__main__":
-    plaintext = "crypto"
+    plaintext = "cryptoiiumlogos"
     
     encryptor = Encryptor(degree=3)
     encrypted_output = encryptor.encrypt(plaintext)
