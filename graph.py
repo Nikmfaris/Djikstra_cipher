@@ -34,6 +34,7 @@ def visualize_graph(G, title=None):
 	nx.draw_networkx_edges(G, pos, width=1.5, alpha=0.8)
 	nx.draw_networkx_labels(G, pos, labels=node_labels, font_size=10, font_color="#08306b")
 	nx.draw_networkx_edge_labels(G, pos, edge_labels=edge_labels, font_size=9)
+	# I build this Shit, Brick by Brick
 
 	plt.axis("off")
 	plt.tight_layout()
